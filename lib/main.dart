@@ -1,3 +1,4 @@
+import 'package:beba_mobile/screens/form/form.dart';
 import 'package:beba_mobile/screens/scan_ticket.dart';
 import 'package:beba_mobile/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,8 @@ class MyApp extends StatelessWidget {
       routes: {
         "/": (context) => const SplashScreen(),
         "/view_events": (context) => const ViewEventsScreen(), // Register view events page
-        "/scan_ticket": (context) => const ScanTicketScreen() // redirect to scan tickets.
+        "/scan_ticket": (context) => const ScanTicketScreen(), // redirect to scan tickets.
+        "/create_event": (context) => const CreateEventForm()
       },
     );
   }

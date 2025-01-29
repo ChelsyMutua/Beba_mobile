@@ -57,7 +57,7 @@ class HomeScreen extends StatelessWidget {
                         left: screenWidth * 0.1, // 10% from left
                         child: GestureDetector(
                           onTap: () =>
-                              Navigator.pushNamed(context, "/view_events"),
+                              Navigator.pushNamed(context, "/create_event"),
                           child: ResponsiveCircle(
                             size: screenWidth * 0.28, // 25% of screen width
                             imagePath: "assets/images/Create event.png",
