@@ -53,36 +53,34 @@ class HomeScreen extends StatelessWidget {
 
                       // Top Left Circle (View Events)
                       Positioned(
-                        top: screenHeight * 0.35, // 38% from top
-                        left: screenWidth * 0.1, // 10% from left
-                        child: GestureDetector(
+                        top: screenHeight * 0.35,
+                        left: screenWidth * 0.1,
+                        child: ResponsiveCircle(
+                          size: screenWidth * 0.28,
+                          imagePath: "assets/images/Create event.png",
                           onTap: () =>
                               Navigator.pushNamed(context, "/create_event"),
-                          child: ResponsiveCircle(
-                            size: screenWidth * 0.28, // 25% of screen width
-                            imagePath: "assets/images/Create event.png",
-                          ),
                         ),
                       ),
 
-                      // Top Right Circle (Create Event)
+// Top Right Circle (Create Event)
                       Positioned(
-                        top: screenHeight * 0.35, // 38% from top
-                        right: screenWidth * 0.1, // 10% from right
-                        child: GestureDetector(
+                        top: screenHeight * 0.35,
+                        right: screenWidth * 0.1,
+                        child: ResponsiveCircle(
+                          size: screenWidth * 0.28,
+                          imagePath: "assets/images/viewEvents.png",
                           onTap: () =>
                               Navigator.pushNamed(context, "/view_events"),
-                          child: ResponsiveCircle(
-                            size: screenWidth * 0.28,
-                            imagePath: "assets/images/viewEvents.png",
-                          ),
                         ),
                       ),
 
-                      // Bottom Circle (Tickets/Scan)
+// Bottom Circle (Tickets/Scan)
                       Positioned(
-                        bottom: screenHeight * 0.25, // 25% from bottom
-                        child: GestureDetector(
+                        bottom: screenHeight * 0.25,
+                        child: ResponsiveCircle(
+                          size: screenWidth * 0.28,
+                          imagePath: "assets/images/scan event.png",
                           onTap: () {
                             showModalBottomSheet(
                               context: context,
@@ -91,10 +89,6 @@ class HomeScreen extends StatelessWidget {
                               builder: (context) => const ScanTicketScreen(),
                             );
                           },
-                          child: ResponsiveCircle(
-                            size: screenWidth * 0.28,
-                            imagePath: "assets/images/scan event.png",
-                          ),
                         ),
                       ),
                     ],
@@ -133,7 +127,7 @@ class CustomAppBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Text(
-                    "TedMbg",
+                    "Organizer",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -141,7 +135,7 @@ class CustomAppBar extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "#dev_life",
+                    "#event",
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black54,
@@ -198,25 +192,30 @@ class CircleIconWidget extends StatelessWidget {
 class ResponsiveCircle extends StatelessWidget {
   final double size;
   final String imagePath;
+  final VoidCallback? onTap;
 
   const ResponsiveCircle({
     super.key,
     required this.size,
     required this.imagePath,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-      ),
-      child: ClipOval(
-        child: Image.asset(
-          imagePath,
-          fit: BoxFit.cover,
+    return GestureDetector(
+      onTap: onTap, // Directly trigger navigation
+      child: Container(
+        width: size,
+        height: size,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            imagePath,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );

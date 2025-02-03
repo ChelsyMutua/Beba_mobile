@@ -12,13 +12,13 @@ class LoadingScreen extends StatefulWidget {
 class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Alignment> _animation;
-  String displayText = "Preparing..."; // Initial text
+  String imagePath = "assets/images/loading.png"; // Initial image
 
   @override
   void initState() {
     super.initState();
 
-    // Animation Controller (Runs for 2.5 seconds)
+    // Animation Controller (Runs for 3 seconds)
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -33,14 +33,14 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
     // Start Animation
     _controller.forward();
 
-    // Change text to "Booked" after 2 seconds
+    // Change image to "Done" after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       setState(() {
-        displayText = "Done 😁";
+        imagePath = "assets/images/done.png"; // Change to done image
       });
     });
 
-    // Navigate to Home after 3 seconds
+    // Navigate to Home after 5 seconds
     Timer(const Duration(seconds: 5), () {
       Navigator.pushReplacement(
         context,
@@ -69,18 +69,15 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
                 colors: [
                   const Color(0xFF00DCDC), // Aqua Green
                   const Color(0xFFFFA07A), // Light Orange
-                  const Color(0xFF002B36), // Dark Teal
+                  const Color(0xFF03646B)
                 ],
               ),
             ),
             child: Center(
-              child: Text(
-                displayText,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+              child: Image.asset(
+                imagePath,
+                width: 200, // Adjust image size
+                fit: BoxFit.contain,
               ),
             ),
           );
