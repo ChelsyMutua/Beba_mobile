@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const CustomAppBar({Key? key}) : super(key: key);
+class FormAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const FormAppBar({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +12,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: 60, // Increase the height of the AppBar
       automaticallyImplyLeading: false, // Disable default leading widget
       title: Align(
-        alignment: Alignment.centerLeft,
+        alignment: Alignment.center,
         child: Padding(
           padding: const EdgeInsets.only(left: 12.0),
           child: SizedBox(

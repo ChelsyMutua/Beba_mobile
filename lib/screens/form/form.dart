@@ -1,9 +1,18 @@
 import 'dart:io';
 
+import 'package:beba_mobile/components/app_bar.dart';
+import 'package:beba_mobile/components/ticket_type.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_places_flutter/google_places_flutter.dart';
+import 'package:google_places_flutter/model/prediction.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:bottom_picker/bottom_picker.dart';
+
+
+
 
 // Reusable form input widget
 class FormInputField extends StatelessWidget {
@@ -134,6 +143,7 @@ class CreateEventFormState extends State<CreateEventForm> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+    appBar: const FormAppBar(),
     floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 floatingActionButton: Container(
   // Keep your existing Container properties
@@ -355,25 +365,32 @@ floatingActionButton: Container(
                   maxLines: 3,
                 ),
 
-              // Replace the existing Date & Time Column with:
-                  EventDateTimePicker(
-                    startDate: _startDate,
-                    startTime: _startTime,
-                    endDate: _endDate,
-                    endTime: _endTime,
-                    onStartDateChanged: (date) => setState(() => _startDate = date),
-                    onStartTimeChanged: (time) => setState(() => _startTime = time),
-                    onEndDateChanged: (date) => setState(() => _endDate = date),
-                    onEndTimeChanged: (time) => setState(() => _endTime = time),
-                  ),
+                DateTimePickerField(
+                onDateTimeSelected: (dateTime) {
+                  setState(() {
+                    _startDate = dateTime;
+                  });
+                },
+              ),
+
 
                 const SizedBox(height: 24),
 
                 // Location
-                FormInputField(
+                FormInputFieldLocation(
                   title: 'Location',
                   hintText: 'Enter event location',
                   controller: _locationController,
+                   onPlaceSelected: (locationData) {
+                      // Handle the selected location data
+                      print('Selected location: $locationData');
+                      // You can access:
+                      // locationData['placeId']
+                      // locationData['name']
+                      // locationData['address']
+                      // locationData['latitude']
+                      // locationData['longitude']
+                    },
                 ),
 
                 // Event Type
@@ -416,53 +433,67 @@ floatingActionButton: Container(
 
                 // Ticket Types
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Ticket Types',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Ticket Types',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Display Selected Tickets
+                ..._selectedTickets.map((ticket) => TicketTypeItem(
+                    type: ticket['type'],
+                    quantity: ticket['quantity'].toString(),
+                    onDelete: () {
+                      setState(() {
+                        _selectedTickets.remove(ticket); // Remove from parent state
+                      });
+                    },
+                  )),
+
+
+                  // Open TicketSelector on Button Click
+                  TextButton(
+                    onPressed: () => _openTicketSelector(),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    ..._ticketTypes.map((ticket) => TicketTypeItem(
-                          type: ticket['type'],
-                          quantity: ticket['quantity'].toString(),
-                          onDelete: () {
-                            setState(() {
-                              _ticketTypes.remove(ticket);
-                            });
-                          },
-                        )),
-                    TextButton(
-                      onPressed: () {
-                        _showAddTicketDialog(context);
-                      },
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.grey[200],
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF01DCDC), // Cyan/Turquoise
+                            Color(0xFFFAA173), // Peach/Orange
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
                         ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        '+ Add Ticket Type',
+                      child: const Text(
+                        'Add Ticket Type',
                         style: TextStyle(
-                          color: Colors.blue[700],
+                          color: Colors.white, 
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+
 
                 const SizedBox(height: 150),
-                // NOTE: The bottom button container was moved to floatingActionButton
-                // but we did not remove it — we simply relocated it.
               ],
             ),
           ),
@@ -473,235 +504,184 @@ floatingActionButton: Container(
     );
   }
 
-  void _showAddTicketDialog(BuildContext context) {
-    String selectedType = _predefinedTicketTypes[0];
-    final quantityController = TextEditingController();
+List<Map<String, dynamic>> _selectedTickets = [];
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Ticket Type'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              value: selectedType,
-              items: _predefinedTicketTypes.map((String type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(type),
-                );
-              }).toList(),
-              onChanged: (String? value) {
-                if (value != null) {
-                  selectedType = value;
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: quantityController,
-              decoration: const InputDecoration(
-                labelText: 'Quantity',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (quantityController.text.isNotEmpty) {
-                int quantity = int.tryParse(quantityController.text) ?? 0;
-                if (quantity > 0) {
-                  setState(() {
-                    _ticketTypes.add({'type': selectedType, 'quantity': quantity});
-                  });
-                  Navigator.pop(context);
-                }
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
+void _openTicketSelector() async {
+  final newTickets = await showDialog<List<Map<String, dynamic>>>(
+    context: context,
+    builder: (context) => TicketSelector(onTicketsSelected: (tickets) {
+      Navigator.of(context).pop(tickets);
+    }),
+  );
+
+  if (newTickets != null) {
+    setState(() {
+      _selectedTickets.addAll(newTickets);
+    });
   }
 }
-class EventDateTimePicker extends StatelessWidget {
-  final DateTime? startDate;
-  final TimeOfDay? startTime;
-  final DateTime? endDate;
-  final TimeOfDay? endTime;
-  final Function(DateTime?) onStartDateChanged;
-  final Function(TimeOfDay?) onStartTimeChanged;
-  final Function(DateTime?) onEndDateChanged;
-  final Function(TimeOfDay?) onEndTimeChanged;
 
-  const EventDateTimePicker({
-    Key? key,
-    this.startDate,
-    this.startTime,
-    this.endDate,
-    this.endTime,
-    required this.onStartDateChanged,
-    required this.onStartTimeChanged,
-    required this.onEndDateChanged,
-    required this.onEndTimeChanged,
-  }) : super(key: key);
+}
+class DateTimePickerField extends StatefulWidget {
+  final Function(DateTime) onDateTimeSelected;
+
+  const DateTimePickerField({Key? key, required this.onDateTimeSelected}) : super(key: key);
+
+  @override
+  _DateTimePickerFieldState createState() => _DateTimePickerFieldState();
+}
+
+class _DateTimePickerFieldState extends State<DateTimePickerField> {
+  DateTime? _selectedDateTime;
+
+  void _pickDateTime(BuildContext context) {
+    BottomPicker.dateTime(
+      pickerTitle: Text("Set the event exact time and date"),
+      pickerTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: Colors.black,
+      ),
+      onSubmit: (date) {
+        setState(() {
+          _selectedDateTime = date;
+        });
+        widget.onDateTimeSelected(date);
+      },
+       onCloseButtonPressed: () {
+      Navigator.pop(context); // 🔥 This will close the BottomPicker properly
+    },
+      minDateTime: DateTime.now(), // Minimum date is today
+      maxDateTime: DateTime.now().add(const Duration(days: 365)), // Maximum 1 year ahead
+      gradientColors: const [
+        Color(0xfffdcbf1),
+        Color(0xffe6dee9),
+      ],
+    ).show(context);
+  }
+
+  
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section title
-        Row(
-          children: [
-            Icon(Icons.calendar_today, size: 20, color: Colors.grey[700]),
-            const SizedBox(width: 8),
-            const Text(
-              'Event date & time',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-          ],
+        // Title
+        const Text(
+          "Set Date & Time",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
         ),
         const SizedBox(height: 8),
 
-        // Start row
-        _buildTimeRow(
-          context: context,
-          label: 'Starts',
-          date: startDate,
-          time: startTime,
-          onDateChanged: onStartDateChanged,
-          onTimeChanged: onStartTimeChanged,
-          firstDate: DateTime.now(),
-        ),
-        const SizedBox(height: 12),
-
-        // End row
-        _buildTimeRow(
-          context: context,
-          label: 'Ends',
-          date: endDate,
-          time: endTime,
-          onDateChanged: onEndDateChanged,
-          onTimeChanged: onEndTimeChanged,
-          firstDate: startDate ?? DateTime.now(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimeRow({
-    required BuildContext context,
-    required String label,
-    required DateTime? date,
-    required TimeOfDay? time,
-    required Function(DateTime?) onDateChanged,
-    required Function(TimeOfDay?) onTimeChanged,
-    required DateTime firstDate,
-  }) {
-    return Row(
-      children: [
-        // Label
-        SizedBox(
-          width: 50,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // Date button
-        Expanded(
-          child: TextButton(
-            onPressed: () async {
-              final selectedDate = await showDatePicker(
-                context: context,
-                initialDate: date ?? firstDate,
-                firstDate: firstDate,
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-              );
-              onDateChanged(selectedDate);
-            },
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.grey[200],
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              date == null
-                  ? 'Date'
-                  : DateFormat('MMM dd, yyyy').format(date),
-              style: TextStyle(
-                color: date == null ? Colors.black87 : Colors.blue[600],
-                fontSize: 14,
-                fontWeight: date == null ? FontWeight.normal : FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-
-      // Time button
-      Expanded(
-        child: TextButton(
-          onPressed: () async {
-            final selectedTime = await showTimePicker(
-              context: context,
-              initialTime: time ?? const TimeOfDay(hour: 9, minute: 0),
-            );
-
-            // Update only if user didn’t cancel
-            if (selectedTime != null) {
-              onTimeChanged(selectedTime);
-            }
-          },
-          style: TextButton.styleFrom(
-            backgroundColor: Colors.grey[200],
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
+        // Date-Time Picker UI (Styled Container)
+        GestureDetector(
+          onTap: () => _pickDateTime(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey[200], // Use grey for a modern feel
               borderRadius: BorderRadius.circular(12),
             ),
-          ),
-          child: Text(
-            time == null ? 'Time' : _formatTime(time),
-            style: TextStyle(
-              color: time == null ? Colors.black87 : Colors.blue[600],
-              fontSize: 14,
-              fontWeight: time == null ? FontWeight.normal : FontWeight.w500,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: const Icon(Icons.calendar_today, color: Colors.black),
+                ), // Calendar icon
+                Text(
+                  _selectedDateTime == null
+                      ? "Select Date & Time"
+                      : DateFormat("EEEE, d MMMM yyyy HH:mm").format(_selectedDateTime!),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ),
       ],
     );
-  }
-
-  String _formatTime(TimeOfDay time) {
-    final hour = time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$hour:$minute $period';
   }
 }
 
+class FormInputFieldLocation extends StatefulWidget {
+  final String title;
+  final String hintText;
+  final TextEditingController controller;
+  final Function(Map<String, dynamic>)? onPlaceSelected; // Add this callback
+
+  const FormInputFieldLocation({
+    Key? key,
+    required this.title,
+    required this.hintText,
+    required this.controller,
+    this.onPlaceSelected,
+  }) : super(key: key);
+
+  @override
+  State<FormInputFieldLocation> createState() => _FormInputFieldLocationState();
+}
+
+class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
+  GoogleMapController? mapController;
+  // PlacesDetailsResponse? placeDetail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(widget.title),
+        const SizedBox(height: 8),
+        GooglePlaceAutoCompleteTextField(
+          textEditingController: widget.controller,
+          googleAPIKey: 'AIzaSyDoTF6PRN7F6LVROdaloeY8ejwUAWFVW5I',
+          inputDecoration: InputDecoration(
+            hintText: widget.hintText,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          debounceTime: 800,
+          isLatLngRequired: true,
+          getPlaceDetailWithLatLng: (Prediction prediction) {
+            // Handle place selection
+            final locationData = {
+              'placeId': prediction.placeId,
+              'name': prediction.description,
+              'address': prediction.description,
+              'latitude': prediction.lat,
+              'longitude': prediction.lng,
+            };
+
+            // Call the callback if provided
+            if (widget.onPlaceSelected != null) {
+              widget.onPlaceSelected!(locationData);
+            }
+          },
+          itemClick: (Prediction prediction) {
+            widget.controller.text = prediction.description ?? '';
+            widget.controller.selection = TextSelection.fromPosition(
+              TextPosition(offset: widget.controller.text.length),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
 class TicketTypeItem extends StatelessWidget {
   final String type;
   final String quantity;
