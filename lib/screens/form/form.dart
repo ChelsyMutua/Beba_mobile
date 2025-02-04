@@ -4,6 +4,7 @@ import 'package:beba_mobile/components/app_bar.dart';
 import 'package:beba_mobile/components/ticket_type.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
@@ -636,14 +637,15 @@ class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
 
   @override
   Widget build(BuildContext context) {
+  final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.title),
+          Text(widget.title),
         const SizedBox(height: 8),
         GooglePlaceAutoCompleteTextField(
           textEditingController: widget.controller,
-          googleAPIKey: 'AIzaSyDoTF6PRN7F6LVROdaloeY8ejwUAWFVW5I',
+          googleAPIKey: apiKey,
           inputDecoration: InputDecoration(
             hintText: widget.hintText,
             contentPadding: const EdgeInsets.symmetric(
