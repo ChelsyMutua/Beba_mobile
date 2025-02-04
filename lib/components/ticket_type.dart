@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wheel_slider/wheel_slider.dart';
 
 class TicketSelector extends StatefulWidget {
   final Function(List<Map<String, dynamic>>) onTicketsSelected;
@@ -139,25 +140,37 @@ class _TicketSelectorState extends State<TicketSelector> {
                       // Quantity Selector
                       const Text("Select Quantity", style: TextStyle(fontSize: 16)),
                       const SizedBox(height: 8),
-                      Container(
+                     Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove_circle_outline),
-                              onPressed: () => handleQuantityChange(-1),
+                        child: Center(
+                          child: WheelSlider.number(
+                            horizontal: false,
+                            verticalListHeight: 250.0,
+                            perspective: 0.01,
+                            // The maximum count for your slider; you mentioned 99 as your clamp:
+                            totalCount: 20000,
+                            // The initial value, tied to your existing quantity state:
+                            initValue: quantity,
+                            // Style for non-selected numbers
+                            unSelectedNumberStyle: const TextStyle(
+                              fontSize: 18.0,
+                              color: Colors.black54,
                             ),
-                            Text(quantity.toString(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            IconButton(
-                              icon: const Icon(Icons.add_circle_outline),
-                              onPressed: () => handleQuantityChange(1),
-                            ),
-                          ],
+                            // Keep the slider’s current index in sync with `quantity`
+                            currentIndex: quantity,
+                            // When the wheel changes, update the `quantity` in State
+                            onValueChanged: (val) {
+                              setState(() {
+                                quantity = val;
+                              });
+                            },
+                            // Optional haptic feedback when the wheel moves
+                            hapticFeedbackType: HapticFeedbackType.heavyImpact,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
