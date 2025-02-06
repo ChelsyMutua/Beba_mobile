@@ -378,13 +378,14 @@ floatingActionButton: Container(
                 const SizedBox(height: 24),
 
                 // Location
+
                 FormInputFieldLocation(
                   title: 'Location',
                   hintText: 'Enter event location',
                   controller: _locationController,
                    onPlaceSelected: (locationData) {
                       // Handle the selected location data
-                      print('Selected location: $locationData');
+                      // print('Selected location: $locationData');
                       // You can access:
                       // locationData['placeId']
                       // locationData['name']
@@ -393,6 +394,8 @@ floatingActionButton: Container(
                       // locationData['longitude']
                     },
                 ),
+
+                 const SizedBox(height: 24),
 
                 // Event Type
                 Column(
@@ -641,8 +644,19 @@ class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-          Text(widget.title),
+          Row(
+            children: [
+              Text(
+              widget.title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            ],
+          ),
         const SizedBox(height: 8),
+        
         GooglePlaceAutoCompleteTextField(
           textEditingController: widget.controller,
           googleAPIKey: apiKey,
@@ -652,8 +666,11 @@ class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
               horizontal: 16,
               vertical: 12,
             ),
+            filled: true,
+            fillColor: Colors.grey[200],
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
           ),
           debounceTime: 800,
