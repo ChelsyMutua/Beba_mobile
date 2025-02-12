@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:beba_mobile/components/app_bar.dart';
+import 'package:beba_mobile/components/delete_dialog.dart';
 import 'package:beba_mobile/components/ticket_type.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
@@ -503,6 +504,7 @@ class CreateEventFormState extends State<CreateEventForm> {
                     },
                   ),
 
+
                   const SizedBox(height: 24),
 
                   // Event Type
@@ -732,6 +734,7 @@ class FormInputFieldLocation extends StatefulWidget {
   final String hintText;
   final TextEditingController controller;
   final Function(Map<String, dynamic>)? onPlaceSelected; // Add this callback
+  final String initialValue;
 
   const FormInputFieldLocation({
     Key? key,
@@ -739,6 +742,7 @@ class FormInputFieldLocation extends StatefulWidget {
     required this.hintText,
     required this.controller,
     this.onPlaceSelected,
+     this.initialValue = '',
   }) : super(key: key);
 
   @override
@@ -746,8 +750,30 @@ class FormInputFieldLocation extends StatefulWidget {
 }
 
 class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
+  final _focusNode = FocusNode();
+  final _controller = TextEditingController();
   GoogleMapController? mapController;
   // PlacesDetailsResponse? placeDetail;
+
+   @override
+  void initState() {
+    super.initState();
+    _controller.text = widget.initialValue;
+    
+    // Listen to focus changes
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        // Handle focus loss if needed
+      }
+    });
+  }
+
+   @override
+  void dispose() {
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -768,7 +794,8 @@ class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
         ),
         const SizedBox(height: 8),
         GooglePlaceAutoCompleteTextField(
-          textEditingController: widget.controller,
+          textEditingController: _controller,
+          focusNode: _focusNode,
           googleAPIKey: apiKey,
           inputDecoration: InputDecoration(
             hintText: widget.hintText,
@@ -784,7 +811,8 @@ class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
             ),
           ),
           debounceTime: 800,
-          isLatLngRequired: true,
+          countries: const ["ke"],
+          isLatLngRequired: false,
           getPlaceDetailWithLatLng: (Prediction prediction) {
             // Handle place selection
             final locationData = {
@@ -801,9 +829,9 @@ class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
             }
           },
           itemClick: (Prediction prediction) {
-            widget.controller.text = prediction.description ?? '';
-            widget.controller.selection = TextSelection.fromPosition(
-              TextPosition(offset: widget.controller.text.length),
+            _controller.text = prediction.description ?? '';
+            _controller.selection = TextSelection.fromPosition(
+              TextPosition(offset:_controller.text.length),
             );
           },
         ),
@@ -849,9 +877,21 @@ class TicketTypeItem extends StatelessWidget {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: onDelete,
-          ),
+          icon: const Icon(Icons.delete),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => DeleteConfirmationDialog(
+                ticketType: type,
+                onDelete: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                  onDelete(); // Execute the delete action
+                },
+                onCancel: () => Navigator.of(context).pop(), // Just close the dialog
+              ),
+            );
+          },
+        ),
         ],
       ),
     );
