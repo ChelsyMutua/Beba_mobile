@@ -38,6 +38,8 @@ dependencies:
   google_places_flutter: ^2.0.6
   flutter_dotenv: ^5.0.2
   wheel_slider: ^1.2.0
+  flutter_typeahead: ^5.2.0
+  flutter_google_maps_webservices: ^1.1.1
  
 
 
