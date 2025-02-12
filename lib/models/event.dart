@@ -1,4 +1,7 @@
+import 'package:intl/intl.dart';
+
 class Event {
+  final String id; // Add an id field
   final String date;
   final String month;
   final String location;
@@ -8,6 +11,7 @@ class Event {
   final List<String> attendees;
 
   Event({
+    required this.id,
     required this.date,
     required this.month,
     required this.location,
@@ -16,21 +20,36 @@ class Event {
     required this.title,
     required this.attendees,
   });
-}
 
-// Sample Data (Later, we can replace this with API fetching)
-List<Event> sampleEvents = [
-  Event(
-    date: "24",
-    month: "Sept",
-    location: "San Francisco",
-    venue: "Golden Gate Pavilion",
-    organizer: "Sonic Waves Productions",
-    title: "Summer Music Festival",
-    attendees: [
-      "assets/images/user1.png",
-      "assets/images/user2.png",
-      "assets/images/user3.png"
-    ],
-  ),
-];
+  // Factory constructor to create an Event from JSON
+  factory Event.fromJson(Map<String, dynamic> json) {
+    // For demonstration, parse the id and use placeholders for fields not provided by your API
+    return Event(
+      id: json['id'] ?? '',
+      date: json["ticket_sale_start"] != null
+          ? DateTime.tryParse(json["ticket_sale_start"])?.day.toString() ?? ""
+          : "",
+      month: json["ticket_sale_start"] != null
+          ? DateFormat("MMM").format(DateTime.tryParse(json["ticket_sale_start"])!)
+          : "",
+      location: json["location"] ?? "Unknown Location",
+      venue: json["venue"] ?? "Unknown Venue",
+      organizer: json["organizer"] ?? "Unknown Organizer",
+      title: json["title"] ?? "",
+      attendees: [], // Adjust if API provides attendee info
+    );
+  }
+
+  // Convert an Event to JSON (for updating purposes)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': '', // Fill as needed
+      'location': location,
+      'date': date,
+      'time': '', // Fill as needed
+      // Add other fields as needed
+    };
+  }
+}
