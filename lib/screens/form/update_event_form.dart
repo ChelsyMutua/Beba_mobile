@@ -152,7 +152,7 @@ class _UpdateEventFormState extends State<UpdateEventForm> {
         url,
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": "099b90d8e22347f1160f33ab460f4ae405da4b0e6b4f40e49f2f7a9f4f622a7a",
+          "x-api-key": "f5150a7983ef9fb0b7f1023da3834b3fc13208546e37876b84658cdfd1f312ea",
         },
         body: jsonEncode(eventData),
       );

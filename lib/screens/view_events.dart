@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -41,7 +40,7 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
         "https://backendcode-production-6e08.up.railway.app/api/events");
     final response = await http.get(url, headers: {
       "x-api-key":
-          "099b90d8e22347f1160f33ab460f4ae405da4b0e6b4f40e49f2f7a9f4f622a7a"
+          "f5150a7983ef9fb0b7f1023da3834b3fc13208546e37876b84658cdfd1f312ea"
     });
 
     if (response.statusCode == 200) {
@@ -104,9 +103,16 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
                 itemBuilder: (context, index) {
                   return InkWell(
                     onTap: () async {
+                      // Print event details to the terminal
+                      print("Event tapped:");
+                      print("ID: ${events[index].id}");
+                      print("Title: ${events[index].title}");
+                      print("Organizer: ${events[index].organizer}");
+                      print("Date: ${events[index].date}");
+                      // print("Time: ${events[index].timerange}");
+                      print("Location: ${events[index].location}");
+                      print("Venue: ${events[index].venue}");
                       // Navigate to UpdateEventForm when tapping the card.
-                      // Pass the event id and a JSON map (using toJson()) of the event data.
-                      // (Ensure your Event model has an id field and a toJson() method.)
                       final updated = await Navigator.push(
                         context,
                         MaterialPageRoute(
