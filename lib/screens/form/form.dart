@@ -103,6 +103,9 @@ class CreateEventFormState extends State<CreateEventForm> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
+  File? _organizerLogoFile;
+  double _logoUploadProgress = 0.0;
+
   String formatTime(DateTime dateTime) {
     return DateFormat.jm().format(dateTime); // Outputs: "10:30 AM"
   }
@@ -126,6 +129,50 @@ class CreateEventFormState extends State<CreateEventForm> {
       debugPrint('Error picking image: $e');
     }
   }
+
+      Future<void> _pickLogoImage() async {
+      try {
+        // Create an instance of ImagePicker if not a global field
+        final ImagePicker picker = ImagePicker();
+
+        // Pick from gallery, can customize as needed
+        final XFile? pickedFile = await picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1800,
+          maxHeight: 1800,
+          imageQuality: 85,
+        );
+
+        if (pickedFile != null) {
+          setState(() {
+            _organizerLogoFile = File(pickedFile.path);
+            _logoUploadProgress = 0.0; // reset progress if you want to keep that
+          });
+          // _uploadLogo(); // if you still want to do a fake or real upload
+        }
+      } catch (e) {
+        debugPrint('Error picking logo image: $e');
+      }
+    }
+
+
+  // void _uploadLogo() async {
+  //   setState(() => _logoUploadProgress = 0.0);
+
+  //   // Fake upload example
+  //   for (int i = 1; i <= 10; i++) {
+  //     await Future.delayed(const Duration(milliseconds: 300));
+  //     setState(() => _logoUploadProgress = i / 10);
+  //   }
+  // }
+
+  void _removeLogoFile() {
+    setState(() {
+      _organizerLogoFile = null;
+      _logoUploadProgress = 0.0;
+    });
+  }
+
 
   final _formKey = GlobalKey<FormState>();
   final _eventNameController = TextEditingController();
@@ -530,17 +577,7 @@ class CreateEventFormState extends State<CreateEventForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Center(
-                  //   child: const Text(
-                  //     'MY EVENTS',
-                  //     style: TextStyle(
-                  //       fontSize: 24,
-                  //       fontWeight: FontWeight.bold,
-                  //       color: Colors.black,
-                  //     ),
-                  //   ),
-                  // ),
-                  const SizedBox(height: 8),
+                  
 
                   const Center(
                     child: Text(
@@ -551,6 +588,87 @@ class CreateEventFormState extends State<CreateEventForm> {
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 24),
+
+                   DottedBorder(
+                color: const Color(0xFFFAA173),
+                strokeWidth: 2,
+                dashPattern: const [6, 3],
+                borderType: BorderType.RRect,
+                radius: const Radius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: _organizerLogoFile == null
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Upload the Organizer Logo',
+                                style: TextStyle(
+                                  color: Colors.grey[800],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: _pickLogoImage,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF01DCDC),
+                              ),
+                              child: const Text(
+                                'Choose file',
+                                style: TextStyle(color: Colors.black),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _organizerLogoFile!.path.split('/').last,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      onPressed: _pickLogoImage,
+                                      icon: const Icon(Icons.edit, color: Colors.black),
+                                    ),
+                                    IconButton(
+                                      onPressed: _removeLogoFile,
+                                      icon: const Icon(Icons.delete, color: Colors.black),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            // const SizedBox(height: 8),
+                            // LinearProgressIndicator(
+                            //   value: _logoUploadProgress,
+                            //   minHeight: 5,
+                            //   backgroundColor: Colors.grey[300],
+                            //   color: const Color(0xFF01DCDC),
+                            // ),
+                          ],
+                        ),
+                ),
+              ),
 
                   const SizedBox(height: 24),
 
