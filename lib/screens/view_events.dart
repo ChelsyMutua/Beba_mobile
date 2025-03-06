@@ -40,7 +40,7 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
         "https://backendcode-production-6e08.up.railway.app/api/events");
     final response = await http.get(url, headers: {
       "x-api-key":
-          "f5150a7983ef9fb0b7f1023da3834b3fc13208546e37876b84658cdfd1f312ea"
+          "34a17966ce9f9a7f8b27ef35007c57051660ce144ab919b768a65e5aea26fb17"
     });
 
     if (response.statusCode == 200) {

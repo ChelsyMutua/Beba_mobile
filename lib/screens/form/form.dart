@@ -98,7 +98,7 @@ class CreateEventFormState extends State<CreateEventForm> {
   Map<String, dynamic>? _selectedLocationData;
 
   String? _selectedVenueId; //keep track of newly creted venue Id's
-  String? _createdCategoryId;
+  String? _selectedCategoryId;
 
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -130,31 +130,30 @@ class CreateEventFormState extends State<CreateEventForm> {
     }
   }
 
-      Future<void> _pickLogoImage() async {
-      try {
-        // Create an instance of ImagePicker if not a global field
-        final ImagePicker picker = ImagePicker();
+  Future<void> _pickLogoImage() async {
+    try {
+      // Create an instance of ImagePicker if not a global field
+      final ImagePicker picker = ImagePicker();
 
-        // Pick from gallery, can customize as needed
-        final XFile? pickedFile = await picker.pickImage(
-          source: ImageSource.gallery,
-          maxWidth: 1800,
-          maxHeight: 1800,
-          imageQuality: 85,
-        );
+      // Pick from gallery, can customize as needed
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1800,
+        maxHeight: 1800,
+        imageQuality: 85,
+      );
 
-        if (pickedFile != null) {
-          setState(() {
-            _organizerLogoFile = File(pickedFile.path);
-            _logoUploadProgress = 0.0; // reset progress if you want to keep that
-          });
-          // _uploadLogo(); // if you still want to do a fake or real upload
-        }
-      } catch (e) {
-        debugPrint('Error picking logo image: $e');
+      if (pickedFile != null) {
+        setState(() {
+          _organizerLogoFile = File(pickedFile.path);
+          _logoUploadProgress = 0.0; // reset progress if you want to keep that
+        });
+        // _uploadLogo(); // if you still want to do a fake or real upload
       }
+    } catch (e) {
+      debugPrint('Error picking logo image: $e');
     }
-
+  }
 
   // void _uploadLogo() async {
   //   setState(() => _logoUploadProgress = 0.0);
@@ -172,7 +171,6 @@ class CreateEventFormState extends State<CreateEventForm> {
       _logoUploadProgress = 0.0;
     });
   }
-
 
   final _formKey = GlobalKey<FormState>();
   final _eventNameController = TextEditingController();
@@ -192,16 +190,19 @@ class CreateEventFormState extends State<CreateEventForm> {
     'Student'
   ];
 
-  final List<String> _eventTypes = [
-    'Sports',
-    'Concert',
-    'Theater',
-    'Family & kids',
-    'Art & Exhibitions',
-    'Comedy',
-    'Movies & Films',
-    'Festivals',
-    'Education & Workshops'
+  final List<Map<String, String>> _eventTypes = [
+    {"name": "Sports", "id": "9b5d881e-7366-41e8-a141-b6819c810271"},
+    {"name": "Concert", "id": "f33fbe5c-ad17-4eef-aca6-70104270459b"},
+    {"name": "Theater", "id": "fa06def7-a366-40d2-b362-1d7c898bf495"},
+    {"name": "Family & kids", "id": "7250b16d-ad3f-4373-aaea-3d0e9d560889"},
+    {"name": "Art & Exhibitions", "id": "cee56953-a3fb-48f5-bfb9-3ffd4e611b16"},
+    {"name": "Comedy", "id": "0d74cb47-22b7-4022-8149-1603a7775179"},
+    {"name": "Movies & Films", "id": "748ae935-795f-4d9f-b605-1ceec9245b5e"},
+    {"name": "Festivals", "id": "d9e98234-44a1-498b-a44f-7aa780d6632f"},
+    {
+      "name": "Education & Workshops",
+      "id": "89a91fab-66c5-476f-91ff-2805b2f0830a"
+    },
   ];
 
   // get venue uuid
@@ -230,7 +231,7 @@ class CreateEventFormState extends State<CreateEventForm> {
         headers: {
           "Content-Type": "application/json",
           "x-api-key":
-              "f5150a7983ef9fb0b7f1023da3834b3fc13208546e37876b84658cdfd1f312ea",
+              "34a17966ce9f9a7f8b27ef35007c57051660ce144ab919b768a65e5aea26fb17",
         },
         body: jsonEncode(venuePayload),
       );
@@ -255,51 +256,6 @@ class CreateEventFormState extends State<CreateEventForm> {
     }
   }
 
-  Future<void> _createCategory() async {
-    final url = Uri.parse(
-        "https://backendcode-production-6e08.up.railway.app/api/categories");
-
-    final categoryPayload = {
-      "name": _selectedEventType,
-      "description": _descriptionController.text,
-      // Include any other fields your model expects
-    };
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key":
-              "f5150a7983ef9fb0b7f1023da3834b3fc13208546e37876b84658cdfd1f312ea",
-        },
-        body: jsonEncode(categoryPayload),
-      );
-
-      if (response.statusCode == 201) {
-        // Parse the JSON response
-        final data = jsonDecode(response.body);
-        // data['id'] is the newly created category's UUID
-        setState(() {
-          _createdCategoryId = data['id'];
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Category Created! ID: $_createdCategoryId")),
-        );
-      } else {
-        print("Error creating category: ${response.body}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to create category.")),
-        );
-      }
-    } catch (error) {
-      print("Network or Server Error: $error");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Network Error. Try again.")),
-      );
-    }
-  }
 
   Future<void> _createEvent() async {
     final url = Uri.parse(
@@ -320,6 +276,20 @@ class CreateEventFormState extends State<CreateEventForm> {
       if (imageUrl == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Image upload failed. Please try again.")),
+        );
+        return;
+      }
+    }
+
+    // Upload the organizer logo if one is selected.
+    String? organizerLogoUrl;
+    if (_organizerLogoFile != null) {
+      organizerLogoUrl =
+          await _uploadOrganizerLogoToCloudinary(_organizerLogoFile!);
+      if (organizerLogoUrl == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("Organizer logo upload failed. Please try again.")),
         );
         return;
       }
@@ -377,7 +347,7 @@ class CreateEventFormState extends State<CreateEventForm> {
     final Map<String, dynamic> eventData = {
       "title": _eventNameController.text,
       "description": _descriptionController.text,
-      "category_id": _createdCategoryId,
+      "category_id": _selectedCategoryId,
       "venue_id": _selectedVenueId,
       "start_date": startDateStr,
       "time": startTimeStr,
@@ -390,7 +360,8 @@ class CreateEventFormState extends State<CreateEventForm> {
       "ticket_sale_end": ticketSaleEndStr,
       "image_url": imageUrl,
       // Use the venue name from the selected location data, or fallback to the controller's text.
-      "location": _locationController.text
+      "location": _locationController.text,
+      "organizer_logo_url": organizerLogoUrl
     };
 
     print("_selectedLocationData: $_selectedLocationData");
@@ -404,7 +375,7 @@ class CreateEventFormState extends State<CreateEventForm> {
         headers: {
           "Content-Type": "application/json",
           "x-api-key":
-              "f5150a7983ef9fb0b7f1023da3834b3fc13208546e37876b84658cdfd1f312ea",
+              "34a17966ce9f9a7f8b27ef35007c57051660ce144ab919b768a65e5aea26fb17",
         },
         body: jsonEncode(eventData),
       );
@@ -469,6 +440,49 @@ class CreateEventFormState extends State<CreateEventForm> {
     }
   }
 
+  // upload organizer logo
+  Future<String?> _uploadOrganizerLogoToCloudinary(File imageFile) async {
+    // Get your Cloudinary settings from environment variables
+    final String cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
+    final String uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
+
+    if (cloudName.isEmpty || uploadPreset.isEmpty) {
+      print("Cloudinary configuration is missing.");
+      return null;
+    }
+
+    // Cloudinary upload endpoint
+    final Uri url =
+        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/upload');
+
+    // Create a multipart request
+    var request = http.MultipartRequest('POST', url);
+    // Set the unsigned preset
+    request.fields['upload_preset'] = uploadPreset;
+    // Attach the file
+    request.files
+        .add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+    try {
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        // Parse the response
+        final resStream = await http.Response.fromStream(response);
+        final Map<String, dynamic> data = jsonDecode(resStream.body);
+        print("Organizer logo upload successful: ${data['secure_url']}");
+        return data[
+            'secure_url']; // This URL will be used as the organizer logo URL
+      } else {
+        print(
+            "Organizer logo upload failed with status: ${response.statusCode}");
+        return null;
+      }
+    } catch (error) {
+      print("Organizer logo upload error: $error");
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -495,16 +509,14 @@ class CreateEventFormState extends State<CreateEventForm> {
                             _isLoading = true;
                           });
                           try {
-                            // 1) Fetch category ID
-                            await _createCategory();
 
-                            // 2) Location
+                            // 1) Location
                             if (_selectedLocationData != null) {
                               print(
                                   "_selectedLocationData: $_selectedLocationData");
                               await _sendVenueData(_selectedLocationData!);
                             }
-                            // 3) Create event
+                            // 2) Create event
                             await _createEvent();
                           } finally {
                             setState(() {
@@ -577,8 +589,6 @@ class CreateEventFormState extends State<CreateEventForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
-
                   const Center(
                     child: Text(
                       'Create Event',
@@ -591,84 +601,89 @@ class CreateEventFormState extends State<CreateEventForm> {
 
                   const SizedBox(height: 24),
 
-                   DottedBorder(
-                color: const Color(0xFFFAA173),
-                strokeWidth: 2,
-                dashPattern: const [6, 3],
-                borderType: BorderType.RRect,
-                radius: const Radius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: _organizerLogoFile == null
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                'Upload the Organizer Logo',
-                                style: TextStyle(
-                                  color: Colors.grey[800],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: _pickLogoImage,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF01DCDC),
-                              ),
-                              child: const Text(
-                                'Choose file',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                  DottedBorder(
+                    color: const Color(0xFFFAA173),
+                    strokeWidth: 2,
+                    dashPattern: const [6, 3],
+                    borderType: BorderType.RRect,
+                    radius: const Radius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: _organizerLogoFile == null
+                          ? Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(
+                                Flexible(
                                   child: Text(
-                                    _organizerLogoFile!.path.split('/').last,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    'Upload the Organizer Logo',
+                                    style: TextStyle(
+                                      color: Colors.grey[800],
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ),
+                                ElevatedButton(
+                                  onPressed: _pickLogoImage,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF01DCDC),
+                                  ),
+                                  child: const Text(
+                                    'Choose file',
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    IconButton(
-                                      onPressed: _pickLogoImage,
-                                      icon: const Icon(Icons.edit, color: Colors.black),
+                                    Expanded(
+                                      child: Text(
+                                        _organizerLogoFile!.path
+                                            .split('/')
+                                            .last,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                     ),
-                                    IconButton(
-                                      onPressed: _removeLogoFile,
-                                      icon: const Icon(Icons.delete, color: Colors.black),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          onPressed: _pickLogoImage,
+                                          icon: const Icon(Icons.edit,
+                                              color: Colors.black),
+                                        ),
+                                        IconButton(
+                                          onPressed: _removeLogoFile,
+                                          icon: const Icon(Icons.delete,
+                                              color: Colors.black),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
+                                // const SizedBox(height: 8),
+                                // LinearProgressIndicator(
+                                //   value: _logoUploadProgress,
+                                //   minHeight: 5,
+                                //   backgroundColor: Colors.grey[300],
+                                //   color: const Color(0xFF01DCDC),
+                                // ),
                               ],
                             ),
-                            // const SizedBox(height: 8),
-                            // LinearProgressIndicator(
-                            //   value: _logoUploadProgress,
-                            //   minHeight: 5,
-                            //   backgroundColor: Colors.grey[300],
-                            //   color: const Color(0xFF01DCDC),
-                            // ),
-                          ],
-                        ),
-                ),
-              ),
+                    ),
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -848,7 +863,7 @@ class CreateEventFormState extends State<CreateEventForm> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _selectedEventType,
+                        value: _selectedCategoryId,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: Colors.grey[200],
@@ -858,16 +873,20 @@ class CreateEventFormState extends State<CreateEventForm> {
                           ),
                         ),
                         hint: const Text('Select event type'),
-                        items: _eventTypes.map((String type) {
+                        items: _eventTypes.map((event) {
                           return DropdownMenuItem(
-                            value: type,
-                            child: Text(type),
+                            value: event["id"], // ✅ Store the event's ID
+                            child: Text(
+                                event["name"]!), // ✅ Display the event's name
                           );
                         }).toList(),
-                        onChanged: (String? value) {
-                          setState(() => _selectedEventType = value);
+                        onChanged: (String? selectedId) {
+                          setState(() {
+                            _selectedCategoryId =
+                                selectedId; // ✅ Store the selected event ID
+                          });
                         },
-                      ),
+                      )
                     ],
                   ),
                   const SizedBox(height: 24),
