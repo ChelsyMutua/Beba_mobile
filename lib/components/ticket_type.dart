@@ -3,8 +3,11 @@ import 'package:wheel_slider/wheel_slider.dart';
 
 class TicketSelector extends StatefulWidget {
   final Function(List<Map<String, dynamic>>) onTicketsSelected;
+  final VoidCallback? onCancel;
+  final Map<String, dynamic>? initialTicket;
+  
 
-  const TicketSelector({Key? key, required this.onTicketsSelected})
+  const TicketSelector({Key? key, required this.onTicketsSelected, this.onCancel, this.initialTicket})
       : super(key: key);
 
   @override
@@ -18,6 +21,7 @@ class _TicketSelectorState extends State<TicketSelector> {
   final List<Map<String, dynamic>> selectedTickets = [];
   final Set<String> _disabledTicketTypes = {};
   final TextEditingController _priceController = TextEditingController();
+  
 
   final List<Map<String, dynamic>> ticketTypes = [
     {'id': 1, 'name': 'Regular', 'color': Colors.pinkAccent},
@@ -27,6 +31,37 @@ class _TicketSelectorState extends State<TicketSelector> {
     {'id': 5, 'name': 'Early Bird', 'color': Colors.amberAccent},
     {'id': 6, 'name': 'Free', 'color': Colors.redAccent},
   ];
+
+
+@override
+void initState() {
+  super.initState();
+  if (widget.initialTicket != null) {
+    String initialType = widget.initialTicket!['type'].toString().toLowerCase();
+    // Use firstWhere with an empty map as default
+    Map<String, dynamic> matchingType = ticketTypes.firstWhere(
+      (type) => type['name'].toString().toLowerCase() == initialType,
+      orElse: () => <String, dynamic>{},
+    );
+    
+    // Check if a matching ticket type was found.
+    if (matchingType.isNotEmpty) {
+      selectedType = matchingType;
+    } else {
+      selectedType = {'name': widget.initialTicket!['type']};
+    }
+    
+    quantity = widget.initialTicket!['quantity'] ?? 0;
+    pricePerTicket = widget.initialTicket!['price']?.toString() ?? '';
+    _priceController.text = pricePerTicket;
+    
+    print("DEBUG: Prefilled ticket type: ${selectedType!['name']}");
+    print("DEBUG: Prefilled quantity: $quantity");
+    print("DEBUG: Prefilled price: $pricePerTicket");
+  }
+}
+
+
 
   void handleTypeSelect(Map<String, dynamic> type) {
     setState(() {
@@ -46,63 +81,58 @@ class _TicketSelectorState extends State<TicketSelector> {
     });
   }
 
-  void handleConfirm() {
-    if (selectedType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a ticket type first.')),
-      );
-      return;
-    }
-
-    bool isFree = selectedType!['name'] == 'Free';
-
-    // Validate quantity (for both free & paid tickets)
-    if (quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a valid quantity.')),
-      );
-      return;
-    }
-
-    // If not free, validate price
-    if (!isFree && (pricePerTicket.isEmpty || int.tryParse(pricePerTicket) == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid ticket price.')),
-      );
-      return;
-    }
-
-    setState(() {
-      // Calculate the price (0 if free)
-      final parsedPrice = isFree ? 0 : int.parse(pricePerTicket);
-      final totalPrice = quantity * parsedPrice;
-
-      selectedTickets.add({
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'type': selectedType!['name'],
-        'quantity': quantity,
-        'price': parsedPrice,
-        'color': selectedType!['color'],
-        'total': totalPrice,
-      });
-
-      // Disable this ticket type from being selected again
-      _disabledTicketTypes.add(selectedType!['name']);
-
-      // Reset form
-      selectedType = null;
-      quantity = 0;
-      pricePerTicket = '';
-      _priceController.clear();
-    });
-
+void handleConfirm() {
+  if (selectedType == null) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ticket added successfully!'),
-        backgroundColor: Color(0xFFFAA173),
-      ),
+      const SnackBar(content: Text('Please select a ticket type first.')),
     );
+    return;
   }
+
+  bool isFree = selectedType!['name'] == 'Free';
+
+  // Validate quantity
+  if (quantity <= 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select a valid quantity.')),
+    );
+    return;
+  }
+
+  // Validate price for non-free tickets
+  if (!isFree && (pricePerTicket.isEmpty || int.tryParse(pricePerTicket) == null)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please enter a valid ticket price.')),
+    );
+    return;
+  }
+
+  final parsedPrice = isFree ? 0 : int.parse(pricePerTicket);
+  final totalPrice = quantity * parsedPrice;
+
+  // Create a ticket data map.
+  // If editing, preserve the existing 'id', otherwise generate a new one.
+  Map<String, dynamic> ticketData = {
+    'id': widget.initialTicket != null
+        ? widget.initialTicket!['id']
+        : DateTime.now().millisecondsSinceEpoch,
+    'type': selectedType!['name'],
+    'quantity': quantity,
+    'price': parsedPrice,
+    'color': selectedType!['color'],
+    'total': totalPrice,
+  };
+
+  // In edit mode, return the updated ticket.
+  if (widget.initialTicket != null) {
+    Navigator.of(context).pop([ticketData]); // Return as a list, matching onTicketsSelected's expectation.
+  } else {
+    // In add mode, add the new ticket to the list.
+    selectedTickets.add(ticketData);
+    Navigator.of(context).pop(selectedTickets);
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -126,10 +156,18 @@ class _TicketSelectorState extends State<TicketSelector> {
                     'Select Ticket Type',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(selectedTickets),
-                  ),
+                 IconButton(
+                   icon: Icon(Icons.close),
+                   onPressed: () {
+                     // Use the onCancel callback if provided
+                     if (widget.onCancel != null) {
+                       widget.onCancel!();
+                     } else {
+                       // Fallback to default close behavior
+                       Navigator.of(context).pop(null);
+                     }
+                   },
+                 ),
                 ],
               ),
             ),
@@ -244,10 +282,10 @@ class _TicketSelectorState extends State<TicketSelector> {
                             ),
                           ),
                           onPressed: handleConfirm,
-                          child: const Text(
-                            "Confirm",
-                            style: TextStyle(color: Colors.black),
-                          ),
+                        child: Text(
+                          widget.initialTicket != null ? "Update" : "Confirm",
+                          style: const TextStyle(color: Colors.black),
+                        ),
                         ),
                       ),
                     ],

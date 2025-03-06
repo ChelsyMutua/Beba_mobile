@@ -231,6 +231,7 @@ class CreateEventFormState extends State<CreateEventForm> {
         headers: {
           "Content-Type": "application/json",
           "x-api-key":
+              "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a",
               "34a17966ce9f9a7f8b27ef35007c57051660ce144ab919b768a65e5aea26fb17",
         },
         body: jsonEncode(venuePayload),
@@ -256,6 +257,51 @@ class CreateEventFormState extends State<CreateEventForm> {
     }
   }
 
+  Future<void> _createCategory() async {
+    final url = Uri.parse(
+        "https://backendcode-production-6e08.up.railway.app/api/categories");
+
+    final categoryPayload = {
+      "name": _selectedEventType,
+      "description": _descriptionController.text,
+      // Include any other fields your model expects
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key":
+              "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a",
+        },
+        body: jsonEncode(categoryPayload),
+      );
+
+      if (response.statusCode == 201) {
+        // Parse the JSON response
+        final data = jsonDecode(response.body);
+        // data['id'] is the newly created category's UUID
+        setState(() {
+          _createdCategoryId = data['id'];
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Category Created! ID: $_createdCategoryId")),
+        );
+      } else {
+        print("Error creating category: ${response.body}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to create category.")),
+        );
+      }
+    } catch (error) {
+      print("Network or Server Error: $error");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Network Error. Try again.")),
+      );
+    }
+  }
 
   Future<void> _createEvent() async {
     final url = Uri.parse(
@@ -375,7 +421,7 @@ class CreateEventFormState extends State<CreateEventForm> {
         headers: {
           "Content-Type": "application/json",
           "x-api-key":
-              "34a17966ce9f9a7f8b27ef35007c57051660ce144ab919b768a65e5aea26fb17",
+              "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a",
         },
         body: jsonEncode(eventData),
       );
