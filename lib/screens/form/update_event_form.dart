@@ -152,7 +152,7 @@ if (availabilityMap != null && availabilityMap is Map) {
   Future<Category> fetchCategory(String categoryId) async {
   final url = Uri.parse("https://backendcode-production-6e08.up.railway.app/api/categories/$categoryId");
   final response = await http.get(url, headers: {
-    "x-api-key": "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a", 
+    "x-api-key": "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a",
   });
 
   if (response.statusCode == 200) {
@@ -399,7 +399,7 @@ void _editTicket(int index) async {
           SnackBar(content: Text("Event updated successfully!")),
         );
         await _refreshEventData(); // Refresh the local data from the backend
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         print("❌ Error: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1081,7 +1081,7 @@ String _getCategoryIdFromEventType(String? eventType) {
             const SizedBox(height: 16),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(context, true);
               },
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 8),

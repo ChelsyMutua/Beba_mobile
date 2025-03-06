@@ -16,7 +16,7 @@ class ViewEventsScreen extends StatefulWidget {
 class _ViewEventsScreenState extends State<ViewEventsScreen>
     with AutomaticKeepAliveClientMixin {
   // A static variable that caches events between widget instances.
-  static List<Event>? _cachedEvents;
+  // static List<Event>? _cachedEvents;
   late Future<List<Event>> _eventsFuture;
 
   @override
@@ -26,14 +26,16 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
   }
 
   void _loadEvents() {
-    if (_cachedEvents != null) {
-      _eventsFuture = Future.value(_cachedEvents);
-    } else {
-      _eventsFuture = fetchEvents().then((events) {
-        _cachedEvents = events;
-        return events;
-      });
-    }
+    // if (_cachedEvents != null) {
+      // _eventsFuture = Future.value(_cachedEvents);
+    // } else {
+      _eventsFuture = fetchEvents();
+      // .then((events) 
+      // {
+        // _cachedEvents = events;
+        // return events;
+    //   });
+    // }
   }
 
   Future<List<Event>> fetchEvents() async {
@@ -42,7 +44,9 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
        
     final response = await http.get(url, headers: {
       "x-api-key":
-          "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a"
+          "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
     });
 
     if (response.statusCode == 200) {
@@ -56,6 +60,12 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
     }
   }
 
+
+   void _refreshEvents() {
+    setState(() {
+      _loadEvents();
+    });
+  }
 
   Future<Venue> fetchVenue(String venueId) async {
   final url = Uri.parse("https://backendcode-production-6e08.up.railway.app/api/venues/$venueId");
@@ -71,13 +81,6 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
   }
 }
 
-  /// Clears the cached events and reloads from the API.
-  void _refreshEvents() {
-    setState(() {
-      _cachedEvents = null;
-      _loadEvents();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +146,7 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
                         ),
                       );
                       // Optionally refresh events if an update was made.
-                      if (updated != null) {
+                      if (updated == true) {
                         _refreshEvents();
                       }
                     },
