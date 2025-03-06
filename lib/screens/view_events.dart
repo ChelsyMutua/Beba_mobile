@@ -1,3 +1,4 @@
+import 'package:beba_mobile/models/venue.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -38,18 +39,37 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
   Future<List<Event>> fetchEvents() async {
     final url = Uri.parse(
         "https://backendcode-production-6e08.up.railway.app/api/events");
+       
     final response = await http.get(url, headers: {
       "x-api-key":
-          "f5150a7983ef9fb0b7f1023da3834b3fc13208546e37876b84658cdfd1f312ea"
+          "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a"
     });
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => Event.fromJson(json)).toList();
+       print(data);
+      return data.map((json) => Event.fromJson(json)).toList()
+      ;
+      
     } else {
       throw Exception("Failed to load events");
     }
   }
+
+
+  Future<Venue> fetchVenue(String venueId) async {
+  final url = Uri.parse("https://backendcode-production-6e08.up.railway.app/api/venues/$venueId");
+  final response = await http.get(url, headers: {
+    "x-api-key": "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a"
+  });
+
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> jsonData = jsonDecode(response.body);
+    return Venue.fromJson(jsonData);
+  } else {
+    throw Exception("Failed to load venue");
+  }
+}
 
   /// Clears the cached events and reloads from the API.
   void _refreshEvents() {
@@ -107,11 +127,11 @@ class _ViewEventsScreenState extends State<ViewEventsScreen>
                       print("Event tapped:");
                       print("ID: ${events[index].id}");
                       print("Title: ${events[index].title}");
-                      print("Organizer: ${events[index].organizer}");
-                      print("Date: ${events[index].date}");
+                      print("Organizer: ${events[index].organizerLogo}");
+                      print("Date: ${events[index].startDate}");
                       // print("Time: ${events[index].timerange}");
-                      print("Location: ${events[index].location}");
-                      print("Venue: ${events[index].venue}");
+                      // print("Location: ${events[index].location}");
+                      print("Venue: ${events[index].venueId}");
                       // Navigate to UpdateEventForm when tapping the card.
                       final updated = await Navigator.push(
                         context,
