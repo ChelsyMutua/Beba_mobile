@@ -99,7 +99,7 @@ class CreateEventFormState extends State<CreateEventForm> {
 
   String? _selectedVenueId; //keep track of newly creted venue Id's
   String? _selectedCategoryId;
-
+  String? _createdCategoryId;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
@@ -232,7 +232,7 @@ class CreateEventFormState extends State<CreateEventForm> {
           "Content-Type": "application/json",
           "x-api-key":
               "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a",
-              "34a17966ce9f9a7f8b27ef35007c57051660ce144ab919b768a65e5aea26fb17",
+          // "34a17966ce9f9a7f8b27ef35007c57051660ce144ab919b768a65e5aea26fb17",
         },
         body: jsonEncode(venuePayload),
       );
@@ -555,7 +555,6 @@ class CreateEventFormState extends State<CreateEventForm> {
                             _isLoading = true;
                           });
                           try {
-
                             // 1) Location
                             if (_selectedLocationData != null) {
                               print(
