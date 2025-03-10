@@ -6,6 +6,7 @@ import 'package:beba_mobile/components/ticket_type.dart';
 import 'package:beba_mobile/models/category.dart';
 import 'package:beba_mobile/screens/event_analytics_page.dart';
 import 'package:beba_mobile/screens/form/form.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bottom_picker/bottom_picker.dart';
@@ -152,7 +153,7 @@ if (availabilityMap != null && availabilityMap is Map) {
   Future<Category> fetchCategory(String categoryId) async {
   final url = Uri.parse("https://backendcode-production-6e08.up.railway.app/api/categories/$categoryId");
   final response = await http.get(url, headers: {
-    "x-api-key": "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a", 
+    "x-api-key": "d28233ab4f263d65184ff7803dc8d93e22fee9e02ecce07956f9edfd7c2e044a",
   });
 
   if (response.statusCode == 200) {
@@ -328,10 +329,29 @@ void _editTicket(int index) async {
 
       // Handle image uploads
     String? posterImageUrl = _existingPosterUrl ?? widget.initialData['image_url'];
+    String? posterPublicId = widget.initialData['poster_public_id'];
+
     if (_selectedImage != null) {
-      String? newUrl = await _uploadImageToCloudinary(_selectedImage!);
-      if (newUrl != null) posterImageUrl = newUrl;
+      // If there's an existing public_id, attempt to update the image
+    if (posterPublicId != null) {
+      Map<String, String>? updatedImage = await _updateCloudinaryImage(
+        publicId: posterPublicId, 
+        imageFile: _selectedImage!
+      );
+
+      if (updatedImage != null) {
+        posterImageUrl = updatedImage['secure_url'];
+        posterPublicId = updatedImage['public_id'];
+      }
+    } else {
+      // If no existing public_id, upload as new
+      Map<String, String>? newImage = await _uploadImageToCloudinary(_selectedImage!);
+      if (newImage != null) {
+        posterImageUrl = newImage['secure_url'];
+        posterPublicId = newImage['public_id'];
+      }
     }
+  }
 
     String? logoUrl = _existingLogoUrl ?? widget.initialData['organizer_logo_url'];
     if (_organizerLogoFile != null) {
@@ -368,6 +388,7 @@ void _editTicket(int index) async {
       "pricing": pricing,
       "ticket_availability": ticketAvailability,
       "image_url": posterImageUrl,
+      "poster_public_id": posterPublicId,
       if (logoUrl != null) "organizer_logo_url": logoUrl,
       // Preserve other fields from initialData
       "early_bird_enabled": widget.initialData['early_bird_enabled'],
@@ -399,7 +420,7 @@ void _editTicket(int index) async {
           SnackBar(content: Text("Event updated successfully!")),
         );
         await _refreshEventData(); // Refresh the local data from the backend
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         print("❌ Error: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -415,7 +436,56 @@ void _editTicket(int index) async {
     }
   }
 
-  //Funstion for updating the venue table based on venue_id
+  Future<Map<String, String>?> _updateCloudinaryImage({
+  required String publicId,
+  required File imageFile,
+}) async {
+  final String cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
+  final String apiKey = dotenv.env['CLOUDINARY_API_KEY'] ?? '';
+  final String apiSecret = dotenv.env['CLOUDINARY_API_SECRET'] ?? '';
+
+  if (cloudName.isEmpty || apiKey.isEmpty || apiSecret.isEmpty) {
+    print("Cloudinary configuration is missing.");
+    return null;
+  }
+
+  final Uri url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/upload');
+
+  final int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  // Build a string to sign that includes the public ID and timestamp.
+  final String toSign = 'public_id=$publicId&timestamp=$timestamp$apiSecret';
+  final String signature = sha1.convert(utf8.encode(toSign)).toString();
+
+  var request = http.MultipartRequest('POST', url);
+  request.fields['api_key'] = apiKey;
+  request.fields['timestamp'] = timestamp.toString();
+  request.fields['signature'] = signature;
+  request.fields['public_id'] = publicId;
+  request.fields['overwrite'] = 'true';
+
+  request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+  try {
+    var response = await request.send();
+    if (response.statusCode == 200) {
+      final resStream = await http.Response.fromStream(response);
+      final Map<String, dynamic> data = jsonDecode(resStream.body);
+      print("Cloudinary update successful: ${data['secure_url']}");
+      return {
+        'secure_url': data['secure_url'],
+        'public_id': data['public_id']
+      };
+    } else {
+      print("Cloudinary update failed with status: ${response.statusCode}");
+      return null;
+    }
+  } catch (error) {
+    print("Cloudinary update error: $error");
+    return null;
+  }
+}
+
+  //Function for updating the venue table based on venue_id
 
 Future<bool> _updateVenue(String venueId, Map<String, dynamic> locationData) async {
   final url = Uri.parse("https://backendcode-production-6e08.up.railway.app/api/venues/${venueId}");
@@ -509,11 +579,13 @@ String _getCategoryIdFromEventType(String? eventType) {
 
 
 
-    Future<String?> _uploadImageToCloudinary(File imageFile) async {
+    Future<Map<String, String>?> _uploadImageToCloudinary(File imageFile) async {
   final String cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
   final String uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
+  final String apiKey = dotenv.env['CLOUDINARY_API_KEY'] ?? '';
+  final String apiSecret = dotenv.env['CLOUDINARY_API_SECRET'] ?? '';
 
-  if (cloudName.isEmpty || uploadPreset.isEmpty) {
+  if (cloudName.isEmpty || uploadPreset.isEmpty || apiKey.isEmpty || apiSecret.isEmpty) {
     print("Cloudinary configuration is missing.");
     return null;
   }
@@ -522,6 +594,7 @@ String _getCategoryIdFromEventType(String? eventType) {
 
   var request = http.MultipartRequest('POST', url);
   request.fields['upload_preset'] = uploadPreset;
+  request.fields['api_key'] = apiKey;
   request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
 
   try {
@@ -529,7 +602,10 @@ String _getCategoryIdFromEventType(String? eventType) {
     if (response.statusCode == 200) {
       final resStream = await http.Response.fromStream(response);
       final Map<String, dynamic> data = jsonDecode(resStream.body);
-      return data['secure_url'];
+            return {
+        'secure_url': data['secure_url'],
+        'public_id': data['public_id']
+      };
     } else {
       print("Cloudinary upload failed: ${response.statusCode}");
       return null;
@@ -1081,7 +1157,7 @@ String _getCategoryIdFromEventType(String? eventType) {
             const SizedBox(height: 16),
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(context, true);
               },
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 8),

@@ -17,6 +17,7 @@ class Event {
   final String? imageUrl;
   final String? organizerLogo;
   final String? slug;
+  final String? posterPublicId;   
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -39,6 +40,7 @@ class Event {
     this.imageUrl,
     this.organizerLogo,
     this.slug,
+    this.posterPublicId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -67,6 +69,7 @@ class Event {
       imageUrl: json['image_url'] as String?,
       organizerLogo: json['organizer_logo_url'] as String?,
       slug: json['slug'] as String?,
+      posterPublicId: json['poster_public_id'] as String?,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );
@@ -92,6 +95,7 @@ class Event {
       'image_url': imageUrl,
       'organizer_logo_url': organizerLogo,
       'slug': slug,
+      'poster_public_id': posterPublicId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
