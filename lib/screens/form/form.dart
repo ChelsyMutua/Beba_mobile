@@ -203,6 +203,7 @@ class CreateEventFormState extends State<CreateEventForm> {
       "name": "Education & Workshops",
       "id": "89a91fab-66c5-476f-91ff-2805b2f0830a"
     },
+    {"name":"Tours & Travel","id":"a4e1bd1c-10bd-4349-b321-a81ca06f0965"}
   ];
 
   // get venue uuid
