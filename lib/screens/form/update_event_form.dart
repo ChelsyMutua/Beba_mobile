@@ -345,7 +345,7 @@ void _editTicket(int index) async {
       }
     } else {
       // If no existing public_id, upload as new
-      Map<String, String>? newImage = await _uploadImageToCloudinary(_selectedImage!);
+      Map<String, String>? newImage = await uploadImageToCloudinary(_selectedImage!);
       if (newImage != null) {
         posterImageUrl = newImage['secure_url'];
         posterPublicId = newImage['public_id'];
@@ -354,10 +354,15 @@ void _editTicket(int index) async {
   }
 
     String? logoUrl = _existingLogoUrl ?? widget.initialData['organizer_logo_url'];
-    if (_organizerLogoFile != null) {
-      String? newLogoUrl = await _uploadLogoToCloudinary(_organizerLogoFile!);
-      if (newLogoUrl != null) logoUrl = newLogoUrl;
+    String? organizerPublicId = widget.initialData['organizer_public_id'];
+
+    Map<String, String>? newLogoData = await uploadImageToCloudinary(_organizerLogoFile!);
+    if (newLogoData != null) {
+      logoUrl = newLogoData['secure_url'];
+      // If you need the public ID, you can also do:
+      organizerPublicId = newLogoData['public_id'];
     }
+
      // Format dates
     String? startDateStr = _startDate != null ? _startDate!.toIso8601String() : 
                          widget.initialData['start_date'];
@@ -390,6 +395,7 @@ void _editTicket(int index) async {
       "image_url": posterImageUrl,
       "poster_public_id": posterPublicId,
       if (logoUrl != null) "organizer_logo_url": logoUrl,
+      "organizer_public_id": organizerPublicId,
       // Preserve other fields from initialData
       "early_bird_enabled": widget.initialData['early_bird_enabled'],
       "early_bird_deadline": widget.initialData['early_bird_deadline'],
@@ -579,35 +585,73 @@ String _getCategoryIdFromEventType(String? eventType) {
 
 
 
-    Future<Map<String, String>?> _uploadImageToCloudinary(File imageFile) async {
+   Future<Map<String, String>?> uploadImageToCloudinary(File imageFile) async {
   final String cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
   final String uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
   final String apiKey = dotenv.env['CLOUDINARY_API_KEY'] ?? '';
   final String apiSecret = dotenv.env['CLOUDINARY_API_SECRET'] ?? '';
 
-  if (cloudName.isEmpty || uploadPreset.isEmpty || apiKey.isEmpty || apiSecret.isEmpty) {
+  if (cloudName.isEmpty || apiKey.isEmpty || apiSecret.isEmpty) {
     print("Cloudinary configuration is missing.");
     return null;
   }
 
   final Uri url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/upload');
-
+  
+  // Using signed upload with API key and secret
+  final int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  
+  // Create a map of parameters to sign
+  Map<String, String> paramsToSign = {
+    'timestamp': timestamp.toString(),
+  };
+  
+  // Add upload preset if available, but not required for signed uploads
+  if (uploadPreset.isNotEmpty) {
+    paramsToSign['upload_preset'] = uploadPreset;
+  }
+  
+  // Build the string to sign by sorting parameters alphabetically
+  List<String> sortedKeys = paramsToSign.keys.toList()..sort();
+  String paramsStr = sortedKeys
+      .map((key) => "$key=${paramsToSign[key]}")
+      .join('&');
+  
+  // Create the signature
+  final String signature = sha1.convert(utf8.encode(paramsStr + apiSecret)).toString();
+  
+  print("Signature details - Timestamp: $timestamp, Params: $paramsStr");
+  
+  // Create the request
   var request = http.MultipartRequest('POST', url);
-  request.fields['upload_preset'] = uploadPreset;
   request.fields['api_key'] = apiKey;
+  request.fields['timestamp'] = timestamp.toString();
+  request.fields['signature'] = signature;
+  
+  // Add upload preset if available
+  if (uploadPreset.isNotEmpty) {
+    request.fields['upload_preset'] = uploadPreset;
+  }
+  
   request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-
+  
+  print("Sending signed request to $url with fields: ${request.fields}");
+  
   try {
     var response = await request.send();
     if (response.statusCode == 200) {
       final resStream = await http.Response.fromStream(response);
+      print("Raw response: ${resStream.body}");
       final Map<String, dynamic> data = jsonDecode(resStream.body);
-            return {
+      print("Cloudinary upload successful: ${data['secure_url']}");
+      return {
         'secure_url': data['secure_url'],
         'public_id': data['public_id']
       };
     } else {
-      print("Cloudinary upload failed: ${response.statusCode}");
+      print("Cloudinary upload failed with status: ${response.statusCode}");
+      final resStream = await http.Response.fromStream(response);
+      print("Error response: ${resStream.body}");
       return null;
     }
   } catch (error) {

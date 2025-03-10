@@ -318,10 +318,10 @@ class CreateEventFormState extends State<CreateEventForm> {
 
 // If an image is selected, upload it to Cloudinary.
 String? imageUrl;
-String? imagePublicId;
+String? posterPublicId;
 
 if (_selectedImage != null) {
-  Map<String, String>? uploadResult = await _uploadImageToCloudinary(_selectedImage!);
+  Map<String, String>? uploadResult = await uploadImageToCloudinary(_selectedImage!);
   if (uploadResult == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Image upload failed. Please try again.")),
@@ -329,15 +329,19 @@ if (_selectedImage != null) {
     return;
   }
   imageUrl = uploadResult['secure_url'];
-  imagePublicId = uploadResult['public_id'];
+  posterPublicId = uploadResult['public_id'];
 
   // Now you can use publicId if needed
 }
 
 // Upload the organizer logo if one is selected.
 String? organizerLogoUrl;
+String? organizerPublicId;
+
+print("Organizer public ID: $organizerPublicId");
+
 if (_organizerLogoFile != null) {
-  Map<String, String>? logoUploadResult = await _uploadOrganizerLogoToCloudinary(_organizerLogoFile!);
+  Map<String, String>? logoUploadResult = await uploadImageToCloudinary(_organizerLogoFile!);
   if (logoUploadResult == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Organizer logo upload failed. Please try again.")),
@@ -345,8 +349,11 @@ if (_organizerLogoFile != null) {
     return;
   }
   organizerLogoUrl = logoUploadResult['secure_url'];
-  // You can also extract the public_id if needed
-  // String? logoPublicId = logoUploadResult['public_id'];
+  organizerPublicId = logoUploadResult['public_id']; 
+
+    print("Organizer public ID: $organizerPublicId");
+} else {
+  print("No organizer logo selected."); 
 }
 
     // If a venue/location was selected, send its data to the venue endpoint.
@@ -413,10 +420,11 @@ if (_organizerLogoFile != null) {
       "ticket_sale_start": ticketSalesStartStr,
       "ticket_sale_end": ticketSaleEndStr,
       "image_url": imageUrl,
-      "image_public_id": imagePublicId,
+      "poster_public_id": posterPublicId,  
       // Use the venue name from the selected location data, or fallback to the controller's text.
       "location": _locationController.text,
-      "organizer_logo_url": organizerLogoUrl
+      "organizer_logo_url": organizerLogoUrl,
+      "organizer_public_id": organizerPublicId 
     };
 
     print("_selectedLocationData: $_selectedLocationData");
@@ -455,64 +463,9 @@ if (_organizerLogoFile != null) {
     }
   }
 
-Future<Map<String, String>?> _uploadImageToCloudinary(File imageFile) async {
+Future<Map<String, String>?> uploadImageToCloudinary(File imageFile) async {
   final String cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
   final String uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
-  final String apiKey = dotenv.env['CLOUDINARY_API_KEY'] ?? '';
-  final String apiSecret = dotenv.env['CLOUDINARY_API_SECRET'] ?? '';
-
-  if (cloudName.isEmpty || uploadPreset.isEmpty || apiKey.isEmpty || apiSecret.isEmpty) {
-    print("Cloudinary configuration is missing.");
-    return null;
-  }
-
-  final Uri url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/upload');
-
-  // Generate timestamp and signature for a signed upload.
-  final int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  final String toSign = 'timestamp=$timestamp$apiSecret';
-  final String signature = sha1.convert(utf8.encode(toSign)).toString();
-  
-  // Debug: print signature details
-  print("Timestamp: $timestamp, ToSign: $toSign, Signature: $signature");
-
-  var request = http.MultipartRequest('POST', url);
-  request.fields['api_key'] = apiKey;
-  request.fields['timestamp'] = timestamp.toString();
-  request.fields['signature'] = signature;
-  request.fields['upload_preset'] = uploadPreset;
-
-  request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-
-  // Debug: print request details before sending
-  print("Sending request to $url with fields: ${request.fields}");
-
-  try {
-    var response = await request.send();
-    if (response.statusCode == 200) {
-      final resStream = await http.Response.fromStream(response);
-      // Debug: print raw response
-      print("Raw response: ${resStream.body}");
-      final Map<String, dynamic> data = jsonDecode(resStream.body);
-      print("Cloudinary upload successful: ${data['secure_url']}");
-      return {
-        'secure_url': data['secure_url'],
-        'public_id': data['public_id']
-      };
-    } else {
-      print("Cloudinary upload failed with status: ${response.statusCode}");
-      return null;
-    }
-  } catch (error) {
-    print("Cloudinary upload error: $error");
-    return null;
-  }
-}
-
-
-  // upload organizer logo
-  Future<Map<String, String>?> _uploadOrganizerLogoToCloudinary(File imageFile) async {
-  final String cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
   final String apiKey = dotenv.env['CLOUDINARY_API_KEY'] ?? '';
   final String apiSecret = dotenv.env['CLOUDINARY_API_SECRET'] ?? '';
 
@@ -522,40 +475,68 @@ Future<Map<String, String>?> _uploadImageToCloudinary(File imageFile) async {
   }
 
   final Uri url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/upload');
-
+  
+  // Using signed upload with API key and secret
   final int timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  final String toSign = 'timestamp=$timestamp$apiSecret';
-  final String signature = sha1.convert(utf8.encode(toSign)).toString();
-
+  
+  // Create a map of parameters to sign
+  Map<String, String> paramsToSign = {
+    'timestamp': timestamp.toString(),
+  };
+  
+  // Add upload preset if available, but not required for signed uploads
+  if (uploadPreset.isNotEmpty) {
+    paramsToSign['upload_preset'] = uploadPreset;
+  }
+  
+  // Build the string to sign by sorting parameters alphabetically
+  List<String> sortedKeys = paramsToSign.keys.toList()..sort();
+  String paramsStr = sortedKeys
+      .map((key) => "$key=${paramsToSign[key]}")
+      .join('&');
+  
+  // Create the signature
+  final String signature = sha1.convert(utf8.encode(paramsStr + apiSecret)).toString();
+  
+  print("Signature details - Timestamp: $timestamp, Params: $paramsStr");
+  
+  // Create the request
   var request = http.MultipartRequest('POST', url);
   request.fields['api_key'] = apiKey;
   request.fields['timestamp'] = timestamp.toString();
   request.fields['signature'] = signature;
-  // Optional: add upload preset if required by your configuration.
-  // request.fields['upload_preset'] = dotenv.env['CLOUDINARY_UPLOAD_PRESET'] ?? '';
-
+  
+  // Add upload preset if available
+  if (uploadPreset.isNotEmpty) {
+    request.fields['upload_preset'] = uploadPreset;
+  }
+  
   request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-
+  
+  print("Sending signed request to $url with fields: ${request.fields}");
+  
   try {
     var response = await request.send();
     if (response.statusCode == 200) {
       final resStream = await http.Response.fromStream(response);
+      print("Raw response: ${resStream.body}");
       final Map<String, dynamic> data = jsonDecode(resStream.body);
-      print("Organizer logo upload successful: ${data['secure_url']}");
+      print("Cloudinary upload successful: ${data['secure_url']}");
       return {
         'secure_url': data['secure_url'],
-        // Optionally, include 'public_id' if you need to manage the logo later.
+        'public_id': data['public_id']
       };
     } else {
-      print("Organizer logo upload failed with status: ${response.statusCode}");
+      print("Cloudinary upload failed with status: ${response.statusCode}");
+      final resStream = await http.Response.fromStream(response);
+      print("Error response: ${resStream.body}");
       return null;
     }
   } catch (error) {
-    print("Organizer logo upload error: $error");
+    print("Cloudinary upload error: $error");
     return null;
   }
 }
-
 
   @override
   Widget build(BuildContext context) {
