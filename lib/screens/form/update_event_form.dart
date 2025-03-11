@@ -42,6 +42,8 @@ class _UpdateEventFormState extends State<UpdateEventForm> {
   late TextEditingController _eventNameController;
   late TextEditingController _descriptionController;
   late TextEditingController _locationController;
+  late TextEditingController _organizerEmailController;
+
   DateTime? _startDate;
   DateTime? _endDate;
   TimeOfDay? _startTime;
@@ -60,7 +62,8 @@ class _UpdateEventFormState extends State<UpdateEventForm> {
     'Comedy',
     'Movies & Films',
     'Festivals',
-    'Education & Workshops'
+    'Education & Workshops',
+    'Tours & Travels'
   ];
 
   @override
@@ -72,6 +75,9 @@ class _UpdateEventFormState extends State<UpdateEventForm> {
     // Prepopulate controllers from the initial data
     _eventNameController = TextEditingController(text: widget.initialData['title'] ?? '');
     _descriptionController = TextEditingController(text: widget.initialData['description'] ?? '');
+     _organizerEmailController = TextEditingController(
+    text: widget.initialData['organizer_email'] ?? '',
+  );
     print("Description from DB: ${widget.initialData['description']}");
 
     _locationController = TextEditingController(text: widget.initialData['location'] ?? '');
@@ -356,11 +362,13 @@ void _editTicket(int index) async {
     String? logoUrl = _existingLogoUrl ?? widget.initialData['organizer_logo_url'];
     String? organizerPublicId = widget.initialData['organizer_public_id'];
 
-    Map<String, String>? newLogoData = await uploadImageToCloudinary(_organizerLogoFile!);
-    if (newLogoData != null) {
-      logoUrl = newLogoData['secure_url'];
-      // If you need the public ID, you can also do:
-      organizerPublicId = newLogoData['public_id'];
+      Map<String, String>? newLogoData;
+    if (_organizerLogoFile != null) {
+      newLogoData = await uploadImageToCloudinary(_organizerLogoFile!);
+      if (newLogoData != null) {
+        logoUrl = newLogoData['secure_url'];
+        organizerPublicId = newLogoData['public_id'];
+      }
     }
 
      // Format dates
@@ -395,6 +403,7 @@ void _editTicket(int index) async {
       "image_url": posterImageUrl,
       "poster_public_id": posterPublicId,
       if (logoUrl != null) "organizer_logo_url": logoUrl,
+      "organizer_email": _organizerEmailController.text,
       "organizer_public_id": organizerPublicId,
       // Preserve other fields from initialData
       "early_bird_enabled": widget.initialData['early_bird_enabled'],
@@ -435,10 +444,10 @@ void _editTicket(int index) async {
       }
     } catch (error) {
       print("❌ Network Error: $error");
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Network error. Please try again.")),
-      );
+      // if (!mounted) return;
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Network error. Please try again.")),
+      // );
     }
   }
 
@@ -1248,6 +1257,28 @@ String _getCategoryIdFromEventType(String? eventType) {
                   // Poster Upload Section
                   _buildPosterUploadWidget(),
                   const SizedBox(height: 24),
+
+                  // Organizer Email
+                  FormInputField(
+                    title: 'Organizer Email',
+                    hintText: 'Enter organizer email',
+                    controller: _organizerEmailController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      // Email validation regex pattern
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(value)) {
+                        return 'Please enter a valid email address';
+                      }
+                      return null;
+                    },
+                    isRequired: true,
+                  ),
+
+                  const SizedBox(height: 24),
+
                   // Event Name
                   FormInputField(
                     title: 'Name of Event',
