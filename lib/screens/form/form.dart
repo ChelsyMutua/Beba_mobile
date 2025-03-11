@@ -24,6 +24,7 @@ class FormInputField extends StatelessWidget {
   final TextEditingController controller;
   final int? maxLines;
   final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
 
   const FormInputField({
     Key? key,
@@ -33,6 +34,7 @@ class FormInputField extends StatelessWidget {
     this.isRequired = true,
     this.maxLines = 1,
     this.keyboardType,
+    this.validator, 
   }) : super(key: key);
 
   @override
@@ -177,6 +179,7 @@ class CreateEventFormState extends State<CreateEventForm> {
   final _eventNameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
+  final _organizerEmailController = TextEditingController();
   DateTime? _startDate;
   DateTime? _endDate;
   TimeOfDay? _startTime;
@@ -425,7 +428,8 @@ if (_organizerLogoFile != null) {
       // Use the venue name from the selected location data, or fallback to the controller's text.
       "location": _locationController.text,
       "organizer_logo_url": organizerLogoUrl,
-      "organizer_public_id": organizerPublicId 
+      "organizer_public_id": organizerPublicId, 
+      "organizer_email": _organizerEmailController.text
     };
 
     print("_selectedLocationData: $_selectedLocationData");
@@ -843,7 +847,44 @@ Future<Map<String, String>?> uploadImageToCloudinary(File imageFile) async {
                     ),
                   ),
 
+                 const SizedBox(height: 24),
+
+                    // Organizer Email
+                    FormInputField(
+                      title: 'Organizer Email',
+                      hintText: 'Enter organizer email',
+                      controller: _organizerEmailController,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Email is required';
+                        }
+                        
+                        // Email validation regex pattern
+                        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                        if (!emailRegex.hasMatch(value)) {
+                          return 'Please enter a valid email address';
+                        }
+                        
+                        return null;
+                      },
+                      isRequired: true,
+                    ),
+
+                    // Descriptive text below email field
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1, left: 8),
+                      child: Text(
+                        'We need your email to send you daily updates and analytics about your event ticket sales.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+
                   const SizedBox(height: 24),
+
 
                   // Event Name
                   FormInputField(
@@ -1246,6 +1287,11 @@ class _FormInputFieldLocationState extends State<FormInputFieldLocation> {
             if (widget.onPlaceSelected != null) {
               widget.onPlaceSelected!(locationData);
             }
+
+             FocusScope.of(context).unfocus();
+
+            // 5. Force a rebuild if needed
+            setState(() {});
           },
         ),
       ],
