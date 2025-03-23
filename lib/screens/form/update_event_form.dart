@@ -52,7 +52,7 @@ class _UpdateEventFormState extends State<UpdateEventForm> {
   Map<String, dynamic>? _selectedLocation;
   List<Map<String, dynamic>> _selectedTickets = [];
 
-  final List<String> _predefinedTicketTypes = ['Regular', 'VIP', 'Early Bird', 'Student'];
+  final List<String> _predefinedTicketTypes = ['Regular', 'VIP', 'VVIP', 'Free', 'At Gate', 'Group of 5', 'Early Bird', 'Student', 'Advanced'];
   final List<String> _eventTypes = [
     'Sports',
     'Concerts',

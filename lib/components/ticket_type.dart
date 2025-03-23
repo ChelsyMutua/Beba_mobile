@@ -30,6 +30,10 @@ class _TicketSelectorState extends State<TicketSelector> {
     {'id': 4, 'name': 'Student', 'color': Colors.purpleAccent},
     {'id': 5, 'name': 'Early Bird', 'color': Colors.amberAccent},
     {'id': 6, 'name': 'Free', 'color': Colors.redAccent},
+    {'id': 7, 'name': 'Advanced', 'color': Colors.tealAccent},
+    {'id': 8, 'name': 'Group of 5', 'color': Colors.orangeAccent}, // 🧑‍🤝‍🧑 Group ticket with orange color
+    {'id': 9, 'name': 'At Gate', 'color': Colors.indigoAccent}, 
+
   ];
 
 
@@ -212,7 +216,7 @@ void handleConfirm() {
                             horizontal: false,
                             verticalListHeight: 250.0,
                             perspective: 0.01,
-                            totalCount: 200, // you can adjust this or keep it large
+                            totalCount: 50000, // you can adjust this or keep it large
                             initValue: quantity,
                             unSelectedNumberStyle: const TextStyle(
                               fontSize: 16.0,

@@ -190,8 +190,13 @@ class CreateEventFormState extends State<CreateEventForm> {
   final List<String> _predefinedTicketTypes = [
     'Regular',
     'VIP',
+    'VVIP',
+    'Free',
     'Early Bird',
-    'Student'
+    'Student',
+    'Advanced',
+    'Group of 5',
+    'At Gate'
   ];
 
   final List<Map<String, String>> _eventTypes = [
