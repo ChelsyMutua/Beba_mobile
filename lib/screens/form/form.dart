@@ -195,7 +195,7 @@ class CreateEventFormState extends State<CreateEventForm> {
     'Early Bird',
     'Student',
     'Advanced',
-    'Group of 5',
+    'Group of 4',
     'At Gate'
   ];
 

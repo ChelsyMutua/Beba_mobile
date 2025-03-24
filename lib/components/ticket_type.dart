@@ -31,7 +31,7 @@ class _TicketSelectorState extends State<TicketSelector> {
     {'id': 5, 'name': 'Early Bird', 'color': Colors.amberAccent},
     {'id': 6, 'name': 'Free', 'color': Colors.redAccent},
     {'id': 7, 'name': 'Advanced', 'color': Colors.tealAccent},
-    {'id': 8, 'name': 'Group of 5', 'color': Colors.orangeAccent}, // 🧑‍🤝‍🧑 Group ticket with orange color
+    {'id': 8, 'name': 'Group of 4', 'color': Colors.orangeAccent}, // 🧑‍🤝‍🧑 Group ticket with orange color
     {'id': 9, 'name': 'At Gate', 'color': Colors.indigoAccent}, 
 
   ];
